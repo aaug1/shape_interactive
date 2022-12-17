@@ -29,7 +29,6 @@ class Shape():
                                 [0,1,0],
                                 [0,0,0]])
     
-    
   def add_point(self, point):
     point_id = point[0]
     self.coordinates[point_id] = point[1:]
@@ -45,7 +44,7 @@ class Shape():
       # Convert to 2D
       points_2D = []
       for point in face:
-        point_2D = self.coordinates_2D[point]
+        point_2D = self.convert_to_2D(self.coordinates[point])
         points_2D.append(point_2D)
       point1, point2, point3 = points_2D[0], points_2D[1], points_2D[2]
       # point1, point2, point3 = face[0], face[1], face[2]
@@ -54,20 +53,24 @@ class Shape():
       pygame.draw.line(screen, 'black', point1, point3)
       pygame.draw.line(screen, 'black', point2, point3)
     
+  def convert_to_2D(self, point, scale = 50):
+      # for point_id, point in self.coordinates.items():
+      new_point = self.to_pygame_coords_2D(np.dot(self.projection_matrix, point), scale)
+        # output.append(new_point)
+        # self.coordinates_2D[point_id] = new_point
+      return new_point
     
-  def get_2D_points(self, scale):
+  
+  def get_2D_points(self, scale = 50):
     """
     Converts 3D coordinates to 2D coordinates
     """
     output = []
-    self.coordinates_2D = {}
     for point_id, point in self.coordinates.items():
-      new_point = self.to_pygame_coords_2D(np.dot(self.projection_matrix, point), scale)
-      output.append(new_point)
-      self.coordinates_2D[point_id] = new_point
+      output.append(self.convert_to_2D(point, scale))
     return output
 
-  def to_pygame_coords_2D(self, coords, scale = 1):
+  def to_pygame_coords_2D(self, coords, scale = 50):
     """
     Convert an object's coords into pygame coordinates 
     (origin at center of pygame coords).
@@ -77,6 +80,24 @@ class Shape():
     
   def get_points(self):
     return self.coordinates
+  
+  def rotate_object(self, angle):
+    rotation_matrix_x = np.array([[1, 0, 0],
+                                  [0, math.cos(angle), -math.sin(angle)],
+                                  [0, math.sin(angle), math.cos(angle)]])
+    rotation_matrix_y = np.array([[math.cos(angle), 0, math.sin(angle)],
+                              [0, 1, 0],
+                              [-math.sin(angle), 0, math.cos(angle)]])
+    output = []
+    for point_id, point in self.coordinates.items():
+      rotated_point = np.dot(point, rotation_matrix_x)
+      rotated_point = np.dot(rotated_point, rotation_matrix_y)
+      point_2D = self.convert_to_2D(rotated_point)
+      self.coordinates[point_id] = rotated_point
+      output.append(point_2D)
+      print(f"point {point_2D}")
+    
+    return output
 
 ############################
 
@@ -103,6 +124,7 @@ for face in faces:
 
 
 run = True
+angle = 0
 while run:
   screen.fill('white')
   timer.tick(fps)
@@ -115,7 +137,9 @@ while run:
       run = False
     
   # Draw the shape
-  points = shape.get_2D_points(scale = 50)
+  angle = 0.01 % 360
+  points = shape.rotate_object(angle)
+  #points = shape.get_2D_points(scale = 50)
   for point in points:
     x = point[0]
     y = point[1]
