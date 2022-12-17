@@ -48,7 +48,7 @@ class Shape():
         points_2D.append(point_2D)
       point1, point2, point3 = points_2D[0], points_2D[1], points_2D[2]
       # point1, point2, point3 = face[0], face[1], face[2]
-      print(f"here {point1}")
+      # print(f"here {point1}")
       pygame.draw.line(screen, 'black', point1, point2)
       pygame.draw.line(screen, 'black', point1, point3)
       pygame.draw.line(screen, 'black', point2, point3)
@@ -81,13 +81,13 @@ class Shape():
   def get_points(self):
     return self.coordinates
   
-  def rotate_object(self, angle):
+  def rotate_object(self, x_rotate, y_rotate):
     rotation_matrix_x = np.array([[1, 0, 0],
-                                  [0, math.cos(angle), -math.sin(angle)],
-                                  [0, math.sin(angle), math.cos(angle)]])
-    rotation_matrix_y = np.array([[math.cos(angle), 0, math.sin(angle)],
+                                  [0, math.cos(x_rotate), -math.sin(x_rotate)],
+                                  [0, math.sin(x_rotate), math.cos(x_rotate)]])
+    rotation_matrix_y = np.array([[math.cos(y_rotate), 0, math.sin(y_rotate)],
                               [0, 1, 0],
-                              [-math.sin(angle), 0, math.cos(angle)]])
+                              [-math.sin(y_rotate), 0, math.cos(y_rotate)]])
     output = []
     for point_id, point in self.coordinates.items():
       rotated_point = np.dot(point, rotation_matrix_x)
@@ -95,7 +95,7 @@ class Shape():
       point_2D = self.convert_to_2D(rotated_point)
       self.coordinates[point_id] = rotated_point
       output.append(point_2D)
-      print(f"point {point_2D}")
+      # print(f"point {point_2D}")
     
     return output
 
@@ -125,6 +125,8 @@ for face in faces:
 
 run = True
 angle = 0
+mouse_press = False
+mouse_press_start_coord = []
 while run:
   screen.fill('white')
   timer.tick(fps)
@@ -136,14 +138,31 @@ while run:
     if event.type == pygame.KEYDOWN and (event.key == pygame.K_q or event.key == pygame.K_ESCAPE):
       run = False
     
-  # Draw the shape
-  angle = 0.01 % 360
-  points = shape.rotate_object(angle)
+  # Recognize user click
+  x_rotate = 0
+  y_rotate = 0
+  # print(pygame.mouse.get_pressed())
+  if pygame.mouse.get_pressed()[0] == True:
+    # Set the initial coordinates
+    if mouse_press == False:
+      pygame.mouse.get_rel() # starts the shift from cur location
+      mouse_press = True
+      
+    y_rotate, x_rotate = pygame.mouse.get_rel()
+    x_rotate = (x_rotate) / WIDTH * 2
+    y_rotate = (y_rotate) / HEIGHT * 2
+  else:
+    mouse_press = False
+      
+  # x_rotate = x_rotate
+  #   y_rotate = y_rotate % 2
+  
+  points = shape.rotate_object(x_rotate, y_rotate)
   #points = shape.get_2D_points(scale = 50)
   for point in points:
     x = point[0]
     y = point[1]
-    print((x, y))
+    # print((x, y))
     pygame.draw.circle(surface = screen, color = 'red', center = (x, y), radius = 5)
   shape.draw_edges()
   pygame.display.flip()
