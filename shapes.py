@@ -13,9 +13,11 @@ pygame.display.set_caption("Render 3D to 2D Shape")
 
 
 class Shape():
-  def __init__(self, coordinates: dict = {}, edges: list = []):
+  def __init__(self, coordinates: dict = {}, faces: list = []):
     self.coordinates = coordinates
     self.id_tracker = len(coordinates)
+    self.faces = faces
+    self.coordinates_2D = {}
     
     # if len(coordinates) == 0:
     #   self.coordinates_3D = np.empty((0,3), float)
@@ -34,26 +36,44 @@ class Shape():
     
     # self.coordinates_3D = np.vstack([self.coordinates_3D, point])
     
-  
+  def add_face(self, face_point_ids):
+    self.faces.append(face_point_ids)
+    
+    
+  def draw_edges(self):
+    for face in self.faces:
+      # Convert to 2D
+      points_2D = []
+      for point in face:
+        point_2D = self.coordinates_2D[point]
+        points_2D.append(point_2D)
+      point1, point2, point3 = points_2D[0], points_2D[1], points_2D[2]
+      # point1, point2, point3 = face[0], face[1], face[2]
+      print(f"here {point1}")
+      pygame.draw.line(screen, 'black', point1, point2)
+      pygame.draw.line(screen, 'black', point1, point3)
+      pygame.draw.line(screen, 'black', point2, point3)
+    
+    
   def get_2D_points(self, scale):
     """
     Converts 3D coordinates to 2D coordinates
     """
     output = []
+    self.coordinates_2D = {}
     for point_id, point in self.coordinates.items():
       new_point = self.to_pygame_coords_2D(np.dot(self.projection_matrix, point), scale)
       output.append(new_point)
+      self.coordinates_2D[point_id] = new_point
     return output
 
-  def to_pygame_coords_2D(self, coords, scale):
+  def to_pygame_coords_2D(self, coords, scale = 1):
     """
     Convert an object's coords into pygame coordinates 
     (origin at center of pygame coords).
     """
     return ((coords[0] * scale + WIDTH/2), (coords[1] * scale + HEIGHT/2))
-  
-  def connect_points(self, point1, point2):
-    pygame.draw.line(screen, 'black', point1, point2)
+
     
   def get_points(self):
     return self.coordinates
@@ -73,9 +93,14 @@ shape = Shape()
 num_vertices = output[0][0]
 num_faces = output[0][1]
 hash_points = {}
-for i in range(1, num_vertices + 1):
-  # hash_points[output[i][0]] = output[i][1:]
-  shape.add_point(output[i]) # Add the point  
+points = output[1:num_vertices + 1]
+for point in points:
+  shape.add_point(point) # Add the point  
+  
+faces = output[1 + num_vertices:]
+for face in faces:
+  shape.add_face(face) # Add the face
+
 
 run = True
 while run:
@@ -96,7 +121,7 @@ while run:
     y = point[1]
     print((x, y))
     pygame.draw.circle(surface = screen, color = 'red', center = (x, y), radius = 5)
-    
+  shape.draw_edges()
   pygame.display.flip()
   
 pygame.quit()
