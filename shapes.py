@@ -19,14 +19,9 @@ class Shape():
     self.faces = faces
     self.coordinates_2D = {}
     
-    # if len(coordinates) == 0:
-    #   self.coordinates_3D = np.empty((0,3), float)
-    # else:
-    #   self.coordinates_3D = np.array(coordinates)
-      
     # Set up 3D to 2D projection matrix
     self.projection_matrix = np.array([[1, 0, 0],
-                                [0,1,0],
+                                [0,-1,0],
                                 [0,0,0]])
     
   def add_point(self, point):
@@ -47,8 +42,6 @@ class Shape():
         point_2D = self.convert_to_2D(self.coordinates[point])
         points_2D.append(point_2D)
       point1, point2, point3 = points_2D[0], points_2D[1], points_2D[2]
-      # point1, point2, point3 = face[0], face[1], face[2]
-      # print(f"here {point1}")
       pygame.draw.line(screen, 'black', point1, point2)
       pygame.draw.line(screen, 'black', point1, point3)
       pygame.draw.line(screen, 'black', point2, point3)
@@ -95,7 +88,6 @@ class Shape():
       point_2D = self.convert_to_2D(rotated_point)
       self.coordinates[point_id] = rotated_point
       output.append(point_2D)
-      # print(f"point {point_2D}")
     
     return output
 
@@ -141,7 +133,6 @@ while run:
   # Recognize user click
   x_rotate = 0
   y_rotate = 0
-  # print(pygame.mouse.get_pressed())
   if pygame.mouse.get_pressed()[0] == True:
     # Set the initial coordinates
     if mouse_press == False:
@@ -153,16 +144,12 @@ while run:
     y_rotate = (y_rotate) / HEIGHT * 2
   else:
     mouse_press = False
-      
-  # x_rotate = x_rotate
-  #   y_rotate = y_rotate % 2
+
   
   points = shape.rotate_object(x_rotate, y_rotate)
-  #points = shape.get_2D_points(scale = 50)
   for point in points:
     x = point[0]
     y = point[1]
-    # print((x, y))
     pygame.draw.circle(surface = screen, color = 'red', center = (x, y), radius = 5)
   shape.draw_edges()
   pygame.display.flip()
