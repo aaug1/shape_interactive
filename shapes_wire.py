@@ -28,8 +28,6 @@ class Shape():
     point_id = point[0]
     self.coordinates[point_id] = point[1:]
     
-    # self.coordinates_3D = np.vstack([self.coordinates_3D, point])
-    
   def add_face(self, face_point_ids):
     self.faces.append(face_point_ids)
     
