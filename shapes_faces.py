@@ -9,7 +9,7 @@ class Shape():
   Creates a shape using 3D coordinates to be
   generated on the pygame window
   """
-  def __init__(self, points: list, faces:list, screen: pygame.Surface, scale:int, colors:list=(0,0,0,1)):
+  def __init__(self, points: list, faces:list, screen: pygame.Surface, scale:int):
     
     self._coordinates = {} # "_" in python is protected
     self._faces = []
@@ -20,7 +20,6 @@ class Shape():
       
     self.screen = screen
     self.scale = scale
-    self.colors = colors
 
     
     # Set up 3D to 2D projection matrix, +z to user
@@ -34,10 +33,17 @@ class Shape():
     self._coordinates[point_id] = point[1:]
     
   def add_face(self, face_point_ids: Tuple[float, float, float]):
-    """Add a face to the shape object"""
-    self._faces.append(face_point_ids)
+    """Add a face to the shape object; corrects winding order to be clockwise"""
+    point1_id, point2_id, point3_id = face_point_ids
+    # vec_1 = np.subtract(self._coordinates[point2_id], self._coordinates[point1_id])
+    # vec_2 = np.subtract(self._coordinates[point3_id], self._coordinates[point1_id])
+    # ortho = np.cross(vec_1[0:2], vec_2[0:2])
+    # print(f"ortho: {ortho}")
+    # if ortho > 0: 
+    #   point2_id, point3_id = point3_id, point2_id
+    self._faces.append([point1_id, point2_id, point3_id])
     
-  def draw_edges(self, color: Tuple[float, float, float, Optional[float]] = (0,0,0)):
+  def draw_edges(self, color: Tuple[float, float, float, Optional[float]] = (0,0,0), width=1):
     """Draws the edges (connecting lines btw points) based on input file"""
     for face in self._faces:      
       # Convert points to 2D
@@ -46,11 +52,12 @@ class Shape():
         point_2D = self.convert_to_2D(self._coordinates[point])
         points_2D.append(point_2D)
       point1, point2, point3 = points_2D[0], points_2D[1], points_2D[2]
+      # Get the vector orthogonal to the face# vec 1 is ccw to vec_2
       
       # Draw the edges
-      pygame.draw.line(self.screen, self.colors['edge'], point1, point2)
-      pygame.draw.line(self.screen, self.colors['edge'], point1, point3)
-      pygame.draw.line(self.screen, self.colors['edge'], point2, point3)
+      pygame.draw.line(self.screen, color, point1, point2, width=width)
+      pygame.draw.line(self.screen, color, point1, point3, width=width)
+      pygame.draw.line(self.screen, color, point2, point3, width=width)
       
   def draw_faces(self):
     """Draws the faces based on input file"""
@@ -74,9 +81,10 @@ class Shape():
     # Render all polygon faces
     for points_2D in faces:
       blue_color = points_2D[3]
-      point1, point2, point3 = points_2D[0], points_2D[1], points_2D[2]
-      pygame.draw.polygon(self.screen, (0, 0, blue_color, 255), [point1, point2, point3], 0)
-    
+      if blue_color >= 95:
+        point1, point2, point3 = points_2D[0], points_2D[1], points_2D[2]
+        pygame.draw.polygon(self.screen, (0, 0, blue_color, 255), [point1, point2, point3])
+      
   def get_color(self, face: Tuple[float, float, float]):
     """
     Calculates the blue color value in range (0,0,95) to (0,0,255)
@@ -84,14 +92,23 @@ class Shape():
     """
     point1, point2, point3 = face
     
+    # Backculling
+    vec_1 = np.subtract(point2, point1)
+    vec_2 = np.subtract(point3, point1)
+    ortho = np.cross(vec_1[0:2], vec_2[0:2])
+    if ortho < 0: 
+      point2, point3 = point3, point2
+    
     # Get the vector orthogonal to the face
     vec_1 = point2 - point1
-    vec_2 = point3 - point2
+    vec_2 = point3 - point1
     ortho = np.cross(vec_1, vec_2)
+    # test = np.subtract(point1, [0,0,])
+    if np.dot(point1, ortho) >= 0:
+      return 0
     
     # Calculates angle between xy-plane and orthogonal vector
     angle = abs(math.asin((ortho[2])/(np.sqrt(ortho[0]**2+ortho[1]**2+ortho[2]**2))))
-    
     # Range of color specified is rgb 95 to 255. Range of angle is -pi/2 to pi/2
     OldRange = (math.pi/2)  
     NewRange = (255 - 95)
@@ -115,10 +132,10 @@ class Shape():
       output.append(self.convert_to_2D(point))
     return output
   
-  def draw_points(self):
+  def draw_points(self, color: Tuple[float, float, float, Optional[float]] = (0,0,0,0)):
     for point_id, point in self._coordinates.items():
       x, y = self.convert_to_2D(point)
-      pygame.draw.circle(surface = self.screen, color = self.colors['point'], center = (x, y), radius = 5)
+      pygame.draw.circle(surface = self.screen, color = color, center = (x, y), radius = 5)
     
 
   def rotate_object(self, x_rotate: float, y_rotate: float):
@@ -155,7 +172,7 @@ class Pygame_Window():
     self.points = points
     self.faces = faces
     self.shape_scale = shape_scale
-    self.shape = Shape(points, faces, self.screen, shape_scale, colors)
+    self.shape = Shape(points, faces, self.screen, shape_scale)
     self.colors = colors
     
   def play_animation(self):
@@ -203,9 +220,9 @@ class Pygame_Window():
       # Render the shape
       self.shape.translate_object(x_translate, y_translate)
       self.shape.rotate_object(x_rotate, y_rotate)
-      self.shape.draw_points()
+      self.shape.draw_points(self.colors['point'])
+      self.shape.draw_edges(self.colors['edge'], 5)
       self.shape.draw_faces()
-      self.shape.draw_edges()
       pygame.display.flip()
 
 class InputHandler:  
@@ -215,7 +232,7 @@ class InputHandler:
     regex = r"(\d+),\s*(\d+),\s*(\d+),\s*(((\d*)?\.\d*)|1|0)"
     keys = ['r', 'g', 'b', 'a']
     if not rgba: # No input specified. Default to black
-      return (0,0,0,1)
+      return (0,0,0,0)
     
     x = re.search(regex, rgba)
 
