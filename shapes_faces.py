@@ -121,8 +121,13 @@ class Shape():
     for point_id, point in self._coordinates.items():
       output.append(self.convert_to_2D(point, scale))
     return output
-
   
+  def draw_points(self):
+    for point_id, point in self._coordinates.items():
+      x, y = self.convert_to_2D(point)
+      pygame.draw.circle(surface = self.screen, color = 'red', center = (x, y), radius = 5)
+    
+
   def rotate_object(self, x_rotate: float, y_rotate: float):
     # Rotation matrices, where matrix mult applies specified x or y rotations
     rotation_matrix_x = np.array([[1, 0, 0],
@@ -137,13 +142,8 @@ class Shape():
     for point_id, point in self._coordinates.items():
       rotated_point = np.dot(point, rotation_matrix_x)
       rotated_point = np.dot(rotated_point, rotation_matrix_y)
-      point_2D = self.convert_to_2D(rotated_point)
       self._coordinates[point_id] = rotated_point
-      output.append(point_2D)
-    
-    return output
 
-############################
 
 class Pygame_Window():
   def __init__(self, WIDTH: int, HEIGHT: int, fps: int, caption: str, filename: str):
@@ -159,7 +159,7 @@ class Pygame_Window():
     mouse_press = False
     while run:
       self.screen.fill('white')
-      self.timer.tick(fps)
+      self.timer.tick(self.fps)
       
       # Listen to quit signal
       for event in pygame.event.get():
@@ -184,11 +184,13 @@ class Pygame_Window():
         mouse_press = False
 
       
-      points = self.shape.rotate_object(x_rotate, y_rotate)
-      for point in points:
-        x = point[0]
-        y = point[1]
-        pygame.draw.circle(surface = self.screen, color = 'red', center = (x, y), radius = 5)
+      # points = self.shape.rotate_object(x_rotate, y_rotate)
+      # for point in points:
+      #   x = point[0]
+      #   y = point[1]
+      #   pygame.draw.circle(surface = self.screen, color = 'red', center = (x, y), radius = 5)
+      self.shape.rotate_object(x_rotate, y_rotate)
+      self.shape.draw_points()
       self.shape.draw_faces()
       self.shape.draw_edges(color = (0,255,0))
       pygame.display.flip()
@@ -198,7 +200,8 @@ class Pygame_Window():
 WIDTH, HEIGHT = 500, 500
 fps = 60
 caption = "Render 3D to 2D Shape"
-game = Pygame_Window(WIDTH, HEIGHT, fps, caption, 'object.txt')
+filename = 'object.txt'
+
+game = Pygame_Window(WIDTH, HEIGHT, fps, caption, filename)
 game.play_animation()
-  
 pygame.quit()
