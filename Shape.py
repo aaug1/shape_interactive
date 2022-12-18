@@ -45,7 +45,6 @@ class Shape:
             for point in face:
                 point_2D = self.__convert_to_2D(self.__coordinates[point])
                 points_2D.append(point_2D)
-            point1, point2, point3 = points_2D[0], points_2D[1], points_2D[2]
             for i in range(3):
                 pygame.draw.line(
                     self.screen,

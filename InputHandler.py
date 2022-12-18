@@ -4,7 +4,7 @@ import re
 class InputHandler:
     def check_color(self, rgba: str):
         # Check to ensure color is of correct form
-        regex = r"(\d+),\s*(\d+),\s*(\d+),\s*(((\d*)?\.\d*)|1|0)"
+        regex = r"(\d+),\s*(\d+),\s*(\d+),\s*(\d+)"
         keys = ["r", "g", "b", "a"]
         if not rgba:  # No input specified. Default to black
             return
@@ -18,7 +18,7 @@ class InputHandler:
         else:
             x = list(x.groups())
 
-        for i in range(3):
+        for i in range(4):
             try:
                 x[i] = int(x[i])
             except ValueError:
@@ -28,12 +28,6 @@ class InputHandler:
 
             if x[i] > 255 or x[i] < 0:
                 raise Exception(f"{x[i]} is not in a valid range for {keys[i]} channel")
-        try:
-            x[3] = float(x[3])
-        except ValueError:
-            raise Exception(
-                f"{x[3]} could not be converted to an integer for {keys[3]} channel"
-            )
 
         return x[0:4]
 
