@@ -47,6 +47,8 @@ class Shape():
       pygame.draw.line(screen, 'black', point2, point3)
       
   def draw_surfaces(self):
+    # order rendering surfaces by color
+    surface_order = []
     for face in self.faces:
       # Convert to 2D
       points_2D = []
@@ -56,9 +58,16 @@ class Shape():
         point_3D = self.coordinates[point]
         points_2D.append(point_2D)
         points_3D.append(point_3D)
+      blue_color, opacity = self.get_color(points_3D)
+      points_2D.append([blue_color, opacity])
+      surface_order.append(points_2D)
+      
+    surface_order.sort(key = lambda x:x[3])
+    print(surface_order)
+    for points_2D in surface_order:
+      blue_color, opacity = points_2D[3]
       point1, point2, point3 = points_2D[0], points_2D[1], points_2D[2]
-      blue_color = self.get_color(points_3D)
-      pygame.draw.polygon(screen, (0,0,blue_color, 1), [point1, point2, point3], 0)
+      pygame.draw.polygon(screen, (0, 0, blue_color, 255), [point1, point2, point3], 0)
     
   def get_color(self, points_3D):
     point1, point2, point3 = points_3D
@@ -68,15 +77,15 @@ class Shape():
     vec_1 = point2 - point1
     vec_2 = point3 - point2
     ortho = np.cross(vec_1, vec_2)
-    print(ortho)
     
     # Following formula calculates angle between xy-plane and vector
-    angle = math.asin(abs(ortho[2])/(np.sqrt(ortho[0]**2+ortho[1]**2+ortho[2]**2)))
+    angle = abs(math.asin((ortho[2])/(np.sqrt(ortho[0]**2+ortho[1]**2+ortho[2]**2))))
+    
     # Range of color specified is rgb 95 to 255. Range of angle is -pi/2 to pi/2
     OldRange = (math.pi/2)  
-    NewRange = (255 - 95)  
+    NewRange = (255 - 95)
     blue_color = (((angle) * NewRange) / OldRange) + 95
-    return blue_color    
+    return blue_color, 0
     
     
     
@@ -188,7 +197,7 @@ while run:
     y = point[1]
     pygame.draw.circle(surface = screen, color = 'red', center = (x, y), radius = 5)
   shape.draw_surfaces()
-  # shape.draw_edges()
+  shape.draw_edges()
   pygame.display.flip()
   
 pygame.quit()
