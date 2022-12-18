@@ -1,33 +1,26 @@
 import pygame
 import numpy as np
 import math
-from typing import List, Optional, Tuple 
+from typing import Optional, Tuple 
+import re
 
 class Shape():
   """
   Creates a shape using 3D coordinates to be
   generated on the pygame window
   """
-  def __init__(self, filename: str, screen: pygame.Surface):
-    with open(filename) as f:
-      output = []
-      for line in f:
-        li = line.strip().split(",")
-        res = [eval(i) for i in li]
-        output.append(res)
+  def __init__(self, points: list, faces:list, screen: pygame.Surface, scale:int, colors:list=(0,0,0,1)):
     
     self._coordinates = {} # "_" in python is protected
     self._faces = []
-    num_vertices = output[0][0]
-    points = output[1:num_vertices + 1]
     for point in points:
       self.add_point(point) # Add the point  
-      
-    faces = output[1 + num_vertices:]
     for face in faces:
       self.add_face(face) # Add the face
       
     self.screen = screen
+    self.scale = scale
+    self.colors = colors
 
     
     # Set up 3D to 2D projection matrix, +z to user
@@ -44,7 +37,7 @@ class Shape():
     """Add a face to the shape object"""
     self._faces.append(face_point_ids)
     
-  def draw_edges(self, color: Tuple[float, float, float, Optional[float]]):
+  def draw_edges(self, color: Tuple[float, float, float, Optional[float]] = (0,0,0)):
     """Draws the edges (connecting lines btw points) based on input file"""
     for face in self._faces:      
       # Convert points to 2D
@@ -55,9 +48,9 @@ class Shape():
       point1, point2, point3 = points_2D[0], points_2D[1], points_2D[2]
       
       # Draw the edges
-      pygame.draw.line(self.screen, color, point1, point2)
-      pygame.draw.line(self.screen, color, point1, point3)
-      pygame.draw.line(self.screen, color, point2, point3)
+      pygame.draw.line(self.screen, self.colors['edge'], point1, point2)
+      pygame.draw.line(self.screen, self.colors['edge'], point1, point3)
+      pygame.draw.line(self.screen, self.colors['edge'], point2, point3)
       
   def draw_faces(self):
     """Draws the faces based on input file"""
@@ -107,25 +100,25 @@ class Shape():
     
     
     
-  def convert_to_2D(self, point: Tuple[float, float, float], scale: int = 50):
+  def convert_to_2D(self, point: Tuple[float, float, float]):
     """Convert an object's coords into pygame coordinates 
     (origin at center of pygame coords)"""
     coords = np.dot(self._projection_matrix, point)
-    new_point = ((coords[0] * scale + WIDTH/2), (coords[1] * scale + HEIGHT/2))
+    new_point = ((coords[0] * self.scale + WIDTH/2), (coords[1] * self.scale + HEIGHT/2))
     return new_point
     
   
-  def get_2D_points(self, scale = 50):
+  def get_2D_points(self):
     """Returns list of 2D points, based on added 3D points"""
     output = []
     for point_id, point in self._coordinates.items():
-      output.append(self.convert_to_2D(point, scale))
+      output.append(self.convert_to_2D(point))
     return output
   
   def draw_points(self):
     for point_id, point in self._coordinates.items():
       x, y = self.convert_to_2D(point)
-      pygame.draw.circle(surface = self.screen, color = 'red', center = (x, y), radius = 5)
+      pygame.draw.circle(surface = self.screen, color = self.colors['point'], center = (x, y), radius = 5)
     
 
   def rotate_object(self, x_rotate: float, y_rotate: float):
@@ -138,21 +131,32 @@ class Shape():
                               [-math.sin(y_rotate), 0, math.cos(y_rotate)]])
     
     # Rotate the shape
-    output = []
     for point_id, point in self._coordinates.items():
       rotated_point = np.dot(point, rotation_matrix_x)
       rotated_point = np.dot(rotated_point, rotation_matrix_y)
       self._coordinates[point_id] = rotated_point
+      
+  def translate_object(self, x_translate: float, y_translate: float):
+    for point_id, point in self._coordinates.items():
+      print(point)
+      translated_point = np.add(point, [x_translate, 0, 0])
+      translated_point = np.add(translated_point, [0, y_translate, 0])
+      self._coordinates[point_id] = translated_point
+      
 
 
 class Pygame_Window():
-  def __init__(self, WIDTH: int, HEIGHT: int, fps: int, caption: str, filename: str):
+  def __init__(self, WIDTH: int, HEIGHT: int, fps: int, caption: str, points: list, faces:list, shape_scale: float, colors: list):
     pygame.init()
     pygame.display.set_caption(caption)
     self.fps = fps
     self.timer = pygame.time.Clock()
     self.screen = pygame.display.set_mode([WIDTH, HEIGHT])
-    self.shape = Shape(filename, self.screen)
+    self.points = points
+    self.faces = faces
+    self.shape_scale = shape_scale
+    self.shape = Shape(points, faces, self.screen, shape_scale, colors)
+    self.colors = colors
     
   def play_animation(self):
     run = True
@@ -167,41 +171,112 @@ class Pygame_Window():
           run = False
         if event.type == pygame.KEYDOWN and (event.key == pygame.K_q or event.key == pygame.K_ESCAPE):
           run = False
-        
-      # Recognize user click
-      x_rotate = 0
-      y_rotate = 0
+          
+        x_translate, y_translate = 0, 0
+        speed = 0.5
+        if event.type == pygame.KEYDOWN:
+          if event.key == pygame.K_LEFT:
+              x_translate = -1 * speed
+          if event.key == pygame.K_RIGHT:
+              x_translate = 1 * speed
+          if event.key == pygame.K_UP:
+              y_translate = -1 * speed
+          if event.key == pygame.K_DOWN:
+              y_translate = 1 * speed
+              
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+          self.shape = Shape(self.points, self.faces, self.screen, self.shape_scale, self.colors)
+          
+      # Recognize user mouse interaction
+      x_rotate, y_rotate = 0, 0
       if pygame.mouse.get_pressed()[0] == True:
-        # Set the initial coordinates
         if mouse_press == False:
           pygame.mouse.get_rel() # starts the shift from cur location
           mouse_press = True
-          
         y_rotate, x_rotate = pygame.mouse.get_rel()
         x_rotate = (x_rotate) / WIDTH * 2
         y_rotate = (y_rotate) / HEIGHT * 2
       else:
         mouse_press = False
-
       
-      # points = self.shape.rotate_object(x_rotate, y_rotate)
-      # for point in points:
-      #   x = point[0]
-      #   y = point[1]
-      #   pygame.draw.circle(surface = self.screen, color = 'red', center = (x, y), radius = 5)
+
+      # Render the shape
+      self.shape.translate_object(x_translate, y_translate)
       self.shape.rotate_object(x_rotate, y_rotate)
       self.shape.draw_points()
       self.shape.draw_faces()
-      self.shape.draw_edges(color = (0,255,0))
+      self.shape.draw_edges()
       pygame.display.flip()
 
+class InputHandler:  
+  
+  def check_color(self, rgba: str):
+    # Check to ensure color is of correct form
+    regex = r"(\d+),\s*(\d+),\s*(\d+),\s*(((\d*)?\.\d*)|1|0)"
+    keys = ['r', 'g', 'b', 'a']
+    if not rgba: # No input specified. Default to black
+      return (0,0,0,1)
+    
+    x = re.search(regex, rgba)
+
+    if not x:
+      raise Exception(f"Please format input as '(r,g,b,a) without negative values'")
+    else:
+      x = list(x.groups())
+
+    for i in range(3):
+      try:
+        x[i] = int(x[i])
+      except ValueError:
+        raise Exception(f"{x[i]} could not be converted to an integer for {keys[i]} channel")
+
+      if x[i] > 255 or x[i] < 0:
+        raise Exception(f"{x[i]} is not in a valid range for {keys[i]} channel")
+    try:
+      x[3] = float(x[3])
+    except ValueError:
+      raise Exception(f"{x[3]} could not be converted to an integer for {keys[3]} channel")
+    
+    return x[0:4]
+  
+  def read_file(self, file_repo: str, filename: str):
+    try:
+      with open(file_repo + filename) as f:
+        output = []
+        for line in f:
+          li = line.strip().split(",")
+          res = [eval(i) for i in li]
+          output.append(res)
+      num_vertices = output[0][0]
+      shape_points = output[1:num_vertices + 1]
+      shape_faces = output[1 + num_vertices:]
+      return shape_points, shape_faces
+    except FileNotFoundError:
+      raise Exception(f"File does not exist. Please make sure it is in object_files directory")      
+    except IndexError:
+      raise Exception(f"Input file is formatted incorrectly")    
 
 # Setup the window
 WIDTH, HEIGHT = 500, 500
 fps = 60
+shape_scale = 50
 caption = "Render 3D to 2D Shape"
-filename = 'object.txt'
+file_repo = './object_files/'
+input_handler = InputHandler()
 
-game = Pygame_Window(WIDTH, HEIGHT, fps, caption, filename)
+# Read in file
+filename = input('Please type in the name of the file: ')
+shape_points, shape_faces = input_handler.read_file(file_repo, filename)
+
+# Check to ensure color is of correct form
+colors = {}
+colors['point'] = input('What color do you want the points to be (R, G, B, A)? ')
+colors['edge'] = input('What color do you want the edges to be (R, G, B, A)? ')
+
+for color_id, rgba in colors.items():
+  colors[color_id] = input_handler.check_color(rgba)
+
+game = Pygame_Window(WIDTH, HEIGHT, fps, caption, 
+                     shape_points, shape_faces, shape_scale, colors)
 game.play_animation()
 pygame.quit()
