@@ -25,7 +25,7 @@ if __name__ == "__main__":
         colors[i] = input_handler.check_color(rgba)
 
     game = PygameEngine(
-        WIDTH, HEIGHT, fps, caption, shape_points, shape_faces, shape_scale, colors, False
+        WIDTH, HEIGHT, fps, caption, shape_points, shape_faces, shape_scale, colors, True
     )
     game.play_animation()
     pygame.quit()

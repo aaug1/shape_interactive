@@ -45,3 +45,19 @@ This function further supports click-and-drag rotations about the origin, where 
 
 
 ## Part 2
+
+
+## Algorithms
+
+This section specifies the 3D graphics algorithms used in the program
+
+1. Cross Product: Calculated using np.cross(A, B). The cross product determines the orthogonal vector  of vectors A and B, which outputs vector $(c_x, c_y, c_z)$ where:
+   1. $c_x = a_y b_z - a_z b_y$
+   2. $c_y = a_z b_x - a_x b_z$
+   3. $c_z = a_x b_y - a_y b_x$
+
+2. Dot Product: Calculated using np.dot(A, B). A measure of how closely two vectors align in terms of direction. Equivalent to $a_xb_x + a_yb_y + a_zb_z$. Used here for matrix multiplication (skips transposition step for mxn mxn matrices) and for back-face culling.
+3. Back-face culling: Used to determine whether the triganle face of the shape was drawn. After determining the normal vector of the triangle face, calulated by choosing any point $v_0$ and using the dot product with the normal vector, N: $(v_0 - P) \cdot N \ge 0$, then cull.
+4. Converting ranges: The following equation was used to determine the range of colors to map the face to, based on its angle with the z-axis: $$new\_val = \frac{((old\_val - old\_min) * (new\_max - new\_min)}{old\_max - old\_min)} + new\_min$$
+5. 
+   
