@@ -14,6 +14,7 @@ class Shape:
 
         self.__coordinates = {}
         for point in points:
+            point[3] = -point[3]
             self.add_point(point)
 
         self.__faces = []
@@ -24,12 +25,15 @@ class Shape:
         self.scale = scale
 
         # Set up 3D to 2D projection matrix, +z to user
-        self.__projection_matrix = np.array([[1, 0, 0], [0, -1, 0], [0, 0, 0]])
+        self.__projection_matrix = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 0]])
+        self.x_translate = 0
+        self.y_translate = 0
 
     def add_point(self, point: Tuple[int, float, float, float]):
         """Add a point to the shape object"""
         point_id = point[0]
         self.__coordinates[point_id] = point[1:]
+        self.__coordinates[point_id][1] = -self.__coordinates[point_id][1]
 
     def add_face(self, face_point_ids: Tuple[float, float, float]):
         """Add a face to the shape object; corrects winding order to be clockwise"""
@@ -119,27 +123,42 @@ class Shape:
             rotated_point = np.dot(point, rotation_matrix_x)
             rotated_point = np.dot(rotated_point, rotation_matrix_y)
             self.__coordinates[point_id] = rotated_point
-
+            
+    def translate_object(self, x_translate: float, y_translate: float):
+      """Translates an object x and y distances"""
+      self.x_translate += x_translate
+      self.y_translate += y_translate
+      for point_id, point in self.__coordinates.items():
+        translated_point = np.add(point, [x_translate, 0, 0])
+        translated_point = np.add(translated_point, [0, y_translate, 0])
+        self.__coordinates[point_id] = translated_point
+        
     def __get_color(self, face: Tuple[float, float, float]):
         """
         Calculates the blue color value in range (0,0,95) to (0,0,255)
         (equivalent to #00005F to #0000FF)
         """
         point1, point2, point3 = face
+        print(self.x_translate)
+        print(self.__coordinates[1])
+        point1 = point1 - [self.x_translate, self.y_translate, 0]
+        point2 = point2 - [self.x_translate, self.y_translate, 0]
+        point3 = point3 - [self.x_translate, self.y_translate, 0]
 
         ## Back-culling to remove faces behind other faces
-        vec_1 = np.subtract(point2, point1)
+        vec_1 = np.subtract(point2 ,point1)
         vec_2 = np.subtract(point3, point1)
         ortho = np.cross(vec_1[0:2], vec_2[0:2])
         if ortho < 0:  # is CCW, so switch to CW
             point2, point3 = point3, point2
 
         # Get the (out-facing) normal vector orthogonal to the face
+        
         vec_1 = point2 - point1
         vec_2 = point3 - point1
         ortho = np.cross(vec_1, vec_2)
         if (
-            np.dot(point1, ortho) >= 0
+            np.dot(point1, ortho) >= 0.1
         ):  # face normal and viewing vector are same direction
             return 0
 
@@ -157,11 +176,11 @@ class Shape:
 
     def __convert_to_2D(self, point: Tuple[float, float, float]):
         """Convert an object's coords into pygame coordinates
-        (origin at center of pygame coords)"""
+        (origin at center of pygame coords; project to screen space)"""
         WIDTH, HEIGHT = self.screen.get_size()
         coords = np.dot(self.__projection_matrix, point)
         new_point = (
             (coords[0] * self.scale + WIDTH / 2),
-            (coords[1] * self.scale + HEIGHT / 2),
+            (-coords[1] * self.scale + HEIGHT / 2),
         )
         return new_point

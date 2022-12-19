@@ -39,7 +39,7 @@ What color do you want the points to be (R, G, B, A)? 0,0,255,255
 What color do you want the edges to be (R, G, B, A)? 0,0,255,255
 ```
 
-Then, the shape will render!
+Then, the shape will render! Press R to reset the shape. Press 'ESC' or 'q' to exit.
 
 ## Description
 ### Part 1: `shape_wire.py`
@@ -75,7 +75,8 @@ This section specifies the 3D graphics algorithms used in the program
 2. **Dot Product**: Calculated using np.dot(A, B). A measure of how closely two vectors align in terms of direction. Equivalent to $a_xb_x + a_yb_y + a_zb_z$. Used here for matrix multiplication (skips transposition step for mxn mxn matrices) and for back-face culling.
 3. **Back-face culling**: Used to determine whether the triganle face of the shape was drawn. After determining the normal vector of the triangle face, calulated by choosing any point $v_0$ and using the dot product with the normal vector, N: $(v_0 - P) \cdot N \ge 0$, then cull.
 4. **Converting ranges**: The following equation was used to determine the range of colors to map the face to, based on its angle with the z-axis: $$new\_val = \frac{((old\_val - old\_min) * (new\_max - new\_min)}{old\_max - old\_min} + new\_min$$
-5. **Projection matrix**: a projection matrix is a square matrix that, when multiplied by vector, will project the points to a subspace. This implementation uses the following projection matrix to map 3D points to 2D: 
+5. **Projection to screen space** Pygame has y axis naturally downwards, so to project onto screen space, we do the following conversion: $x,y --> x + WIDTH/2, -y + WIDTH/2$
+6. **Projection matrix**: a projection matrix is a square matrix that, when multiplied by vector, will project the points to a subspace. This implementation uses the following projection matrix to map 3D points to 2D: 
    $$
    \begin{pmatrix}
    1 & 0 & 0 \\
@@ -83,7 +84,7 @@ This section specifies the 3D graphics algorithms used in the program
    0 & 0 & 0 \\
    \end{pmatrix}
    $$
-6. **Rotation matrix**: these are square transformation matrices that, when multiplied by a vector, rotates it in euclidean space. For x and y rotations, the following matrices were used:
+7. **Rotation matrix**: these are square transformation matrices that, when multiplied by a vector, rotates it in euclidean space. For x and y rotations, the following matrices were used:
   $$ R_x = 
   \begin{pmatrix}
   1 & 0 & 0 \\

@@ -1,5 +1,6 @@
 import pygame
 from Shape import Shape
+import math
 
 
 class PygameEngine:
@@ -49,6 +50,17 @@ class PygameEngine:
                     self.shape = Shape(
                         self.points, self.faces, self.screen, self.shape_scale
                     )
+                x_translate, y_translate = 0,0
+                speed = 0.5
+                if event.type == pygame.KEYDOWN:
+                  if event.key == pygame.K_LEFT:
+                      x_translate = -1 * speed
+                  if event.key == pygame.K_RIGHT:
+                      x_translate = 1 * speed
+                  if event.key == pygame.K_UP:
+                      y_translate = 1 * speed
+                  if event.key == pygame.K_DOWN:
+                      y_translate = -1 * speed
 
             # Recognize user mouse interaction for rotation
             x_rotate, y_rotate = 0, 0
@@ -63,7 +75,9 @@ class PygameEngine:
                 mouse_press = False
 
             # Render the shape
+            self.shape.translate_object(x_translate, y_translate)
             self.shape.rotate_object(x_rotate, y_rotate)
+            
             if len(self.colors) > 0 and self.colors[0]:
                 self.shape.draw_points(self.colors[0])      
 
