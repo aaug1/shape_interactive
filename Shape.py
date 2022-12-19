@@ -18,7 +18,7 @@ class Shape:
             self.add_point(point)
 
         self.__faces = []
-        for face in faces:
+        for face in faces:        
             self.add_face(face)
 
         self.screen = screen
@@ -101,6 +101,11 @@ class Shape:
 
     def rotate_object(self, x_rotate: float, y_rotate: float):
         """Rotates an object about x and y axes"""
+        x_rotate = x_rotate % (2*math.pi)
+        if x_rotate < math.pi: x_rotate -= 2 * math.pi
+        y_rotate = y_rotate % (2*math.pi)
+        if y_rotate < math.pi: y_rotate -= 2 * math.pi
+        
 
         # Rotation matrices, where matrix mult applies specified x or y rotations
         rotation_matrix_x = np.array(
@@ -139,26 +144,24 @@ class Shape:
         (equivalent to #00005F to #0000FF)
         """
         point1, point2, point3 = face
-        print(self.x_translate)
-        print(self.__coordinates[1])
         point1 = point1 - [self.x_translate, self.y_translate, 0]
         point2 = point2 - [self.x_translate, self.y_translate, 0]
         point3 = point3 - [self.x_translate, self.y_translate, 0]
 
         ## Back-culling to remove faces behind other faces
-        vec_1 = np.subtract(point2 ,point1)
-        vec_2 = np.subtract(point3, point1)
-        ortho = np.cross(vec_1[0:2], vec_2[0:2])
+        AB = np.round(np.subtract(point2 ,point1), 1)
+        AC = np.round(np.subtract(point3, point1),1)
+        ortho = np.cross(AB[0:2], AC[0:2])
         if ortho < 0:  # is CCW, so switch to CW
             point2, point3 = point3, point2
 
         # Get the (out-facing) normal vector orthogonal to the face
         
-        vec_1 = point2 - point1
-        vec_2 = point3 - point1
-        ortho = np.cross(vec_1, vec_2)
+        AB = np.round((point2 - point1),1)
+        AC = np.round((point3 - point1),1)
+        ortho = np.cross(AB, AC)
         if (
-            np.dot(point1, ortho) >= 0.1
+            np.round(np.dot(point1, ortho),1) > 0.1
         ):  # face normal and viewing vector are same direction
             return 0
 
