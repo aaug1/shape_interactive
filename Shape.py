@@ -65,6 +65,7 @@ class Shape:
     ):
         """Draws the faces based on input file"""
         # Get all of the faces
+        faces = []
         for face in self.__faces:
             # Convert to 2D
             points_2D = []
@@ -77,8 +78,14 @@ class Shape:
                 points_2D.append(point_2D)
                 points_3D.append(point_3D)
             blue_color = self.__get_color(points_3D)
+            points_2D.append(blue_color)
+            faces.append(points_2D)
 
             # Only display if visible from viewport
+        #faces.sort(key=lambda x: x[3])
+        
+        for points_2D in faces:
+            blue_color = points_2D[3]
             if blue_color >= 95:
                 point1, point2, point3 = points_2D[0], points_2D[1], points_2D[2]
                 pygame.draw.polygon(
@@ -156,14 +163,13 @@ class Shape:
             point2, point3 = point3, point2
 
         # Get the (out-facing) normal vector orthogonal to the face
-        
         AB = np.round((point2 - point1),1)
         AC = np.round((point3 - point1),1)
         ortho = np.cross(AB, AC)
         if (
             np.round(np.dot(point1, ortho),1) > 0.1
         ):  # face normal and viewing vector are same direction
-            return 0
+            return 94
 
         # Calculates angle between xy-plane and orthogonal vector
         angle = abs(
@@ -174,7 +180,7 @@ class Shape:
         # Range of color specified is rgb 95 to 255. Range of angle is 0 to pi/2
         OldRange = math.pi / 2
         NewRange = 255 - 95
-        blue_color = (((angle) * NewRange) / OldRange) + 95
+        blue_color = int(((angle) * NewRange) / OldRange) + 95
         return blue_color
 
     def __convert_to_2D(self, point: Tuple[float, float, float]):
